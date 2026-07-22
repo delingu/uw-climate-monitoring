@@ -55,8 +55,9 @@ export default function SentimentSelector({
               >
                 <span
                   className={cn(
-                    "size-10 rounded-full border-[3px] border-slate-700 bg-white transition-colors duration-200",
-                    selectedValue === option && "bg-slate-800",
+                    "hover:bg-stone-200 size-10 rounded-full border-[3px] border-slate-700 bg-white transition-colors duration-200",
+                    selectedValue === option &&
+                      "bg-slate-800 hover:bg-slate-800",
                   )}
                 />
 
