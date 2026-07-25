@@ -10,13 +10,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { MdOutlineLayers } from "react-icons/md";
 import FloorPlanMap from "@/components/floorPlan";
 import { PSE_FLOOR_4 } from "@/lib/floorPlan";
 import RoomSentimentCard from "@/components/roomSentimentCard";
@@ -32,11 +25,27 @@ import {
 import { useEffect, useState } from "react";
 import { AiOutlinePlus } from "react-icons/ai";
 import { useRouter } from "next/navigation";
+import { Time, WaterDrop, WindStrong } from "griddy-icons";
+import { PiThermometerSimpleFill } from "react-icons/pi";
 
-const items = [{ label: "Floor 4", value: "Floor 4" }];
+const floors = [{ label: "Floor 4", value: "Floor 4" }];
+const timeRanges = [
+  { label: "24H", value: "24H" },
+  { label: "Weekly", value: "Weekly" },
+  { label: "Monthly", value: "Monthly" },
+  { label: "Yearly", value: "Yearly" },
+  { label: "All time", value: "All time" },
+];
 
-// will adjust: time period for data displayed
-const WINDOW_SECONDS = 24 * 60 * 60;
+const DAY = 24 * 60 * 60;
+
+const WINDOW_SECONDS: Record<string, number | null> = {
+  "24H": DAY,
+  Weekly: 7 * DAY,
+  Monthly: 30 * DAY,
+  Yearly: 365 * DAY,
+  "All time": null,
+};
 
 // refresh rate for data: 1 minute
 const REFRESH_MS = 60_000;
@@ -47,31 +56,70 @@ interface RoomSentiment extends MetricRow {
   count: number;
 }
 
+// e.g. "1 minute ago", "32 seconds ago"
+function relativeTime(fromMs: number, nowMs: number): string {
+  const seconds = Math.max(0, Math.floor((nowMs - fromMs) / 1000));
+  if (seconds < 1) return "just now";
+
+  const phrase = (value: number, unit: string) =>
+    `${value} ${unit}${value === 1 ? "" : "s"} ago`;
+
+  if (seconds < 60) return phrase(seconds, "second");
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return phrase(minutes, "minute");
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return phrase(hours, "hour");
+  return phrase(Math.floor(hours / 24), "day");
+}
+
+const LABEL_TICK_MS = 30_000;
+
+function LastUpdated({ since }: { since: number | null }) {
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), LABEL_TICK_MS);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex items-center gap-1">
+      <Time size={16} />
+      <p>Last updated: {since === null ? "—" : relativeTime(since, now)}</p>
+    </div>
+  );
+}
+
 export default function Home() {
   // state variable for the rows of sentiment data in db
   const [rows, setRows] = useState<RoomSentiment[]>([]);
   const [layer, setLayer] = useState<Layer>("temperature");
+  const [timeRange, setTimeRange] = useState("24H");
+  // epoch ms of the last successful fetch, for the "last updated" label
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   const router = useRouter();
 
-  // fetches all sentiment data on mount
+  // reloads on mount and whenever the time range changes, then polls
   useEffect(() => {
     const load = async () => {
       const now = Math.floor(Date.now() / 1000);
+      const window = WINDOW_SECONDS[timeRange];
       const params = new URLSearchParams({
-        timeStart: String(now - WINDOW_SECONDS),
+        timeStart: String(window === null ? 0 : now - window),
         timeEnd: String(now),
       });
 
       const response = await fetch(`/api/sentiment?${params}`);
       const { result } = await response.json();
       setRows(result);
+      setLastUpdated(Date.now());
     };
 
     load();
     const interval = setInterval(load, REFRESH_MS);
     return () => clearInterval(interval);
-  }, []);
+  }, [timeRange]);
 
   const roomColors: Record<string, string> = {};
   for (const row of rows) {
@@ -97,7 +145,7 @@ export default function Home() {
   };
 
   return (
-    <main className="p-16 flex flex-col w-screen h-screen bg-white">
+    <main className="p-16 flex flex-col max-w-screen h-screen bg-white">
       <Button
         variant="default"
         size="default"
@@ -109,95 +157,126 @@ export default function Home() {
         <AiOutlinePlus />
         Log how you feel
       </Button>
-      <header className="flex py-2 items-center">
-        <div className="w-1/2 flex flex-col">
-          <div className="flex flex-row gap-x-4">
-            <h1 className="font-bold text-xl">PSE</h1>
-            <Select items={items} value={"Floor 4"}>
-              <SelectTrigger className="w-[90px] text-sm h-2">
-                <SelectValue placeholder="Floor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {items.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {item.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-xs mt-1">Subjective discomfort, self-reported</p>
+      <header className="flex flex-row justify-between w-full">
+        <div>
+          <h1 className="font-bold text-xl">Comfort Map</h1>
+          <p className="text-xs">
+            Subjective comfort levels recorded. Come log how you feel!
+          </p>
         </div>
-        <div className="w-1/2 flex flex-col justify-end items-end">
-          <Tabs defaultValue="home" className="">
-            <TabsList className="group-data-horizontal/tabs:h-12 p-1.5">
-              <TabsTrigger
-                value="home"
-                className="data-active:bg-black data-active:text-white data-active:hover:text-white"
-              >
-                Home
-              </TabsTrigger>
-              <TabsTrigger
-                value="dataTrends"
-                className="data-active:bg-black data-active:text-white data-active:hover:text-white"
-              >
-                Data & Trends
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </div>
+        <Tabs defaultValue="home" className="">
+          <TabsList className="group-data-horizontal/tabs:h-12 p-1.5 rounded-full">
+            <TabsTrigger
+              value="home"
+              className="data-active:bg-black data-active:text-white data-active:hover:text-white rounded-full"
+            >
+              Comfort Map
+            </TabsTrigger>
+            <TabsTrigger
+              value="dataTrends"
+              className="data-active:bg-black data-active:text-white data-active:hover:text-white rounded-full"
+            >
+              Data & Trends
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </header>
-      <section className="flex pl-8 py-8 justify-between">
-        <div className="flex flex-row gap-16">
+      <section className="flex pt-4 item-center flex-row justify-between">
+        <div className="flex flex-row gap-x-4 items-center">
+          <h2 className="font-bold text-xl">PSE</h2>
+          <Select items={floors} value={"Floor 4"}>
+            <SelectTrigger className="flex shrink text-xs h-2 rounded-full font-bold">
+              <SelectValue placeholder="Floor" />
+            </SelectTrigger>
+            <SelectContent className="rounded-full">
+              <SelectGroup>
+                {floors.map((item) => (
+                  <SelectItem
+                    key={item.value}
+                    value={item.value}
+                    className="rounded-full"
+                  >
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <Select
+          items={timeRanges}
+          value={timeRange}
+          onValueChange={(value) => setTimeRange(value as string)}
+        >
+          <SelectTrigger className="flex shrink text-xs rounded-full font-bold">
+            <SelectValue placeholder="Time Range" />
+          </SelectTrigger>
+          <SelectContent
+            className="rounded-2xl"
+            align="end"
+            alignItemWithTrigger={false}
+          >
+            <SelectGroup className="">
+              {timeRanges.map((item) => (
+                <SelectItem
+                  key={item.value}
+                  value={item.value}
+                  className="rounded-full"
+                >
+                  {item.label}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </section>
+      <section className="flex flex-col gap-2 py-4">
+        <Tabs value={layer} onValueChange={(value) => setLayer(value as Layer)}>
+          <TabsList variant="line">
+            <TabsTrigger value="temperature">
+              <PiThermometerSimpleFill />
+              Temperature
+            </TabsTrigger>
+            <TabsTrigger value="humidity">
+              <WaterDrop />
+              Humidity
+            </TabsTrigger>
+            <TabsTrigger value="air">
+              <WindStrong />
+              Air Quality
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+        <div className="flex flex-row pl-1 text-xs pt-4 w-full justify-between">
           {layer === "humidity" ? (
             <div className="flex flex-col">
-              <h4>Humidity</h4>
-              <div className="mt-2 text-xs flex flex-row w-full items-baseline gap-3">
+              <div className="flex flex-row items-baseline gap-3">
                 <p>Too Dry</p>
-                <div className="grow h-2 min-w-25 from-[#F4E194] to-[#B099E9] bg-linear-to-r" />
+                <div className="rounded-full grow h-2 min-w-35 from-[#F4E194] to-[#B099E9] bg-linear-to-r" />
                 <p>Too Humid</p>
               </div>
             </div>
           ) : layer === "temperature" ? (
             <div className="flex flex-col">
-              <h4>Temperature</h4>
-              <div className="mt-2 text-xs flex flex-row w-full items-baseline gap-3">
+              <div className="flex flex-row items-baseline gap-3">
                 <p>Too Cold</p>
-                <div className="grow h-2 min-w-25 from-[#9EDAFF] to-[#DD6E5B] bg-linear-to-r" />
+                <div className="rounded-full grow h-2 min-w-35 from-[#9EDAFF] to-[#DD6E5B] bg-linear-to-r" />
                 <p>Too Hot</p>
               </div>
             </div>
           ) : (
             <div className="flex flex-col">
-              <h4>Air Quality</h4>
-              <div className="mt-2 text-xs flex flex-row w-full items-baseline gap-3">
+              <div className="flex flex-row items-baseline gap-3">
                 <p>Very Stuffy</p>
-                <div className="grow h-2 min-w-25 from-[#F3BB77] to-[#B3DBB8] bg-linear-to-r" />
+                <div className="rounded-full grow h-2 min-w-35 from-[#F3BB77] to-[#B3DBB8] bg-linear-to-r" />
                 <p>Very Fresh</p>
               </div>
             </div>
           )}
+          <LastUpdated since={lastUpdated} />
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" />}>
-            <MdOutlineLayers />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem onClick={() => setLayer("temperature")}>
-              Temperature
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setLayer("humidity")}>
-              Humidity
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setLayer("air")}>
-              Air Quality
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </section>
-      <section className="flex grow px-8">
+      <section className="flex grow pb-8">
         <FloorPlanMap
           plan={PSE_FLOOR_4}
           roomColors={roomColors}
