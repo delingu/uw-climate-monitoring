@@ -1,0 +1,9 @@
+<svg width="159" height="216" viewBox="0 0 159 216" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" clip-rule="evenodd" d="M93.1241 14.5104C85.7759 6.297 73.2817 6.35341 65.9869 14.6144C49.2987 33.5129 21.4614 67.9924 7.90382 101.5H151.323C137.881 67.6103 109.918 33.2821 93.1241 14.5104Z" fill="#E8E8E8"/>
+<path d="M79.5 216C123.407 216 159 180.407 159 136.5C159 125.356 156.065 113.455 151.323 101.5H7.90382C3.02871 113.549 0 125.472 0 136.5C0 180.407 35.5934 216 79.5 216Z" fill="#9EDAFF"/>
+<ellipse cx="39.4286" cy="132.111" rx="17.7746" ry="20.7569" transform="rotate(14.5836 39.4286 132.111)" fill="white"/>
+<ellipse cx="43.369" cy="131.484" rx="11.7637" ry="13.7375" transform="rotate(14.5836 43.369 131.484)" fill="black"/>
+<ellipse cx="120.57" cy="132.111" rx="17.7746" ry="20.7569" transform="rotate(14.5836 120.57 132.111)" fill="white"/>
+<ellipse cx="120.671" cy="131.484" rx="11.7637" ry="13.7375" transform="rotate(14.5836 120.671 131.484)" fill="black"/>
+<path d="M67 138C67 138 68.2608 153 80.4063 153C92.5517 153 93 138 93 138" stroke="black" stroke-width="4" stroke-linecap="round"/>
+</svg>

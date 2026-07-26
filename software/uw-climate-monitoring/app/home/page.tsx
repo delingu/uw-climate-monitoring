@@ -97,7 +97,7 @@ export default function Home() {
   };
 
   return (
-    <main className="p-16 flex flex-col w-screen h-screen bg-white">
+    <main className="p-16 flex flex-col w-full min-h-screen bg-white">
       <Button
         variant="default"
         size="default"
