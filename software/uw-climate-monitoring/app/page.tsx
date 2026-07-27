@@ -180,11 +180,7 @@ export default function Page() {
             <SelectContent alignItemWithTrigger={false} align="start">
               <SelectGroup>
                 {items.map((item) => (
-                  <SelectItem
-                    key={item.value}
-                    value={item.value}
-                    disabled={item.value !== "4417"}
-                  >
+                  <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
                 ))}
