@@ -163,7 +163,7 @@ export default function Home() {
         size="default"
         className="flex fixed bottom-12 right-16 rounded-full 
           items-center justify-center text-sm font-semibold transition-transform duration-200 hover:scale-105
-          h-auto px-4 py-3"
+          h-auto px-4 py-3 z-100"
         onClick={handleRedirect}
       >
         <AiOutlinePlus />
@@ -204,10 +204,14 @@ export default function Home() {
         <div className="flex flex-row gap-x-4 items-center">
           <h2 className="font-bold text-xl">PSE</h2>
           <Select items={floors} value={"Floor 4"}>
-            <SelectTrigger className="flex shrink text-xs h-2 rounded-full font-bold">
+            <SelectTrigger className="flex shrink text-xs rounded-full font-bold">
               <SelectValue placeholder="Floor" />
             </SelectTrigger>
-            <SelectContent className="rounded-full">
+            <SelectContent
+              className="rounded-2xl"
+              align="start"
+              alignItemWithTrigger={false}
+            >
               <SelectGroup>
                 {floors.map((item) => (
                   <SelectItem
@@ -227,10 +231,14 @@ export default function Home() {
               value={room}
               onValueChange={(value) => setRoom(value as string)}
             >
-              <SelectTrigger className="flex shrink text-xs h-2 rounded-full font-bold">
+              <SelectTrigger className="flex shrink text-xs rounded-full font-bold">
                 <SelectValue placeholder="Room" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl">
+              <SelectContent
+                className="rounded-2xl"
+                align="start"
+                alignItemWithTrigger={false}
+              >
                 <SelectGroup>
                   {rooms.map((item) => (
                     <SelectItem

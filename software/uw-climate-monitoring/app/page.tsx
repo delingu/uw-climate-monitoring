@@ -40,9 +40,9 @@ function buildIcons(
 }
 
 export default function Page() {
-  const [tempSentiment, setTempSentiment] = useState<
-    LikertValue | undefined
-  >(undefined);
+  const [tempSentiment, setTempSentiment] = useState<LikertValue | undefined>(
+    undefined,
+  );
   const [humiditySentiment, setHumiditySentiment] = useState<
     LikertValue | undefined
   >(undefined);
@@ -174,17 +174,17 @@ export default function Page() {
               setLocation({ ...location, room: Number(value) })
             }
           >
-            <SelectTrigger className="w-[100px]">
+            <SelectTrigger className="w-[100px] rounded-full">
               <SelectValue placeholder="Room" />
             </SelectTrigger>
-            <SelectContent alignItemWithTrigger={false} align="start">
+            <SelectContent
+              alignItemWithTrigger={false}
+              align="start"
+              className="rounded-2xl"
+            >
               <SelectGroup>
                 {items.map((item) => (
-                  <SelectItem
-                    key={item.value}
-                    value={item.value}
-                    disabled={item.value !== "4417"}
-                  >
+                  <SelectItem key={item.value} value={item.value}>
                     {item.label}
                   </SelectItem>
                 ))}
