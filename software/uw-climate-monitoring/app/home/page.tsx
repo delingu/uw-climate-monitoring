@@ -11,6 +11,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import FloorPlanMap from "@/components/floorPlan";
+import DataTrends from "@/components/dataTrends";
 import { PSE_FLOOR_4 } from "@/lib/floorPlan";
 import RoomSentimentCard from "@/components/roomSentimentCard";
 import {
@@ -29,6 +30,13 @@ import { Time, WaterDrop, WindStrong } from "griddy-icons";
 import { PiThermometerSimpleFill } from "react-icons/pi";
 
 const floors = [{ label: "Floor 4", value: "Floor 4" }];
+const rooms = [
+  { label: "Room 4043", value: "PSE-4-4043" },
+  { label: "Room 4053", value: "PSE-4-4053" },
+  { label: "Room 4417", value: "PSE-4-4417" },
+  { label: "Room 4433", value: "PSE-4-4433" },
+  { label: "Room 4437", value: "PSE-4-4437" },
+];
 const timeRanges = [
   { label: "24H", value: "24H" },
   { label: "Weekly", value: "Weekly" },
@@ -55,6 +63,8 @@ interface RoomSentiment extends MetricRow {
   location: string;
   count: number;
 }
+
+type Page = "comfortMap" | "dataTrends";
 
 // e.g. "1 minute ago", "32 seconds ago"
 function relativeTime(fromMs: number, nowMs: number): string {
@@ -94,9 +104,11 @@ export default function Home() {
   // state variable for the rows of sentiment data in db
   const [rows, setRows] = useState<RoomSentiment[]>([]);
   const [layer, setLayer] = useState<Layer>("temperature");
-  const [timeRange, setTimeRange] = useState("24H");
+  const [timeRange, setTimeRange] = useState("Weekly");
+  const [room, setRoom] = useState("PSE-4-4043");
   // epoch ms of the last successful fetch, for the "last updated" label
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [page, setPage] = useState<Page>("comfortMap");
 
   const router = useRouter();
 
@@ -145,7 +157,7 @@ export default function Home() {
   };
 
   return (
-    <main className="p-16 flex flex-col w-full min-h-screen bg-white">
+    <main className="p-16 flex flex-col w-full h-screen overflow-hidden bg-white">
       <Button
         variant="default"
         size="default"
@@ -159,15 +171,22 @@ export default function Home() {
       </Button>
       <header className="flex flex-row justify-between w-full">
         <div>
-          <h1 className="font-bold text-xl">Comfort Map</h1>
+          <h1 className="font-bold text-xl">
+            {page === "comfortMap" ? "Comfort Map" : "Data & Trends"}
+          </h1>
           <p className="text-xs">
-            Subjective comfort levels recorded. Come log how you feel!
+            {page === "comfortMap"
+              ? "Subjective comfort levels recorded. Come log how you feel!"
+              : "Sensor readings and historical trends"}
           </p>
         </div>
-        <Tabs defaultValue="home" className="">
+        <Tabs
+          defaultValue="comfortMap"
+          onValueChange={(value) => setPage(value as Page)}
+        >
           <TabsList className="group-data-horizontal/tabs:h-12 p-1.5 rounded-full">
             <TabsTrigger
-              value="home"
+              value="comfortMap"
               className="data-active:bg-black data-active:text-white data-active:hover:text-white rounded-full"
             >
               Comfort Map
@@ -181,7 +200,7 @@ export default function Home() {
           </TabsList>
         </Tabs>
       </header>
-      <section className="flex pt-4 item-center flex-row justify-between">
+      <section className="flex py-4 item-center flex-row justify-between">
         <div className="flex flex-row gap-x-4 items-center">
           <h2 className="font-bold text-xl">PSE</h2>
           <Select items={floors} value={"Floor 4"}>
@@ -202,6 +221,30 @@ export default function Home() {
               </SelectGroup>
             </SelectContent>
           </Select>
+          {page === "dataTrends" ? (
+            <Select
+              items={rooms}
+              value={room}
+              onValueChange={(value) => setRoom(value as string)}
+            >
+              <SelectTrigger className="flex shrink text-xs h-2 rounded-full font-bold">
+                <SelectValue placeholder="Room" />
+              </SelectTrigger>
+              <SelectContent className="rounded-2xl">
+                <SelectGroup>
+                  {rooms.map((item) => (
+                    <SelectItem
+                      key={item.value}
+                      value={item.value}
+                      className="rounded-full"
+                    >
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          ) : null}
         </div>
         <Select
           items={timeRanges}
@@ -230,69 +273,80 @@ export default function Home() {
           </SelectContent>
         </Select>
       </section>
-      <section className="flex flex-col gap-2 py-4">
-        <Tabs value={layer} onValueChange={(value) => setLayer(value as Layer)}>
-          <TabsList variant="line">
-            <TabsTrigger value="temperature">
-              <PiThermometerSimpleFill />
-              Temperature
-            </TabsTrigger>
-            <TabsTrigger value="humidity">
-              <WaterDrop />
-              Humidity
-            </TabsTrigger>
-            <TabsTrigger value="air">
-              <WindStrong />
-              Air Quality
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <div className="flex flex-row pl-1 text-xs pt-4 w-full justify-between">
-          {layer === "humidity" ? (
-            <div className="flex flex-col">
-              <div className="flex flex-row items-baseline gap-3">
-                <p>Too Dry</p>
-                <div className="rounded-full grow h-2 min-w-35 from-[#F4E194] to-[#B099E9] bg-linear-to-r" />
-                <p>Too Humid</p>
-              </div>
+      {page === "comfortMap" ? (
+        <div className="flex flex-1 flex-col overflow-y-auto [scrollbar-gutter:stable]">
+          <section className="flex flex-col gap-2 pb-4">
+            <Tabs
+              value={layer}
+              onValueChange={(value) => setLayer(value as Layer)}
+            >
+              <TabsList variant="line">
+                <TabsTrigger value="temperature">
+                  <PiThermometerSimpleFill />
+                  Temperature
+                </TabsTrigger>
+                <TabsTrigger value="humidity">
+                  <WaterDrop />
+                  Humidity
+                </TabsTrigger>
+                <TabsTrigger value="air">
+                  <WindStrong />
+                  Air Quality
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <div className="flex flex-row pl-1 text-xs pt-4 w-full justify-between">
+              {layer === "humidity" ? (
+                <div className="flex flex-col">
+                  <div className="flex flex-row items-baseline gap-3">
+                    <p>Too Dry</p>
+                    <div className="rounded-full grow h-2 min-w-35 from-[#F4E194] to-[#B099E9] bg-linear-to-r" />
+                    <p>Too Humid</p>
+                  </div>
+                </div>
+              ) : layer === "temperature" ? (
+                <div className="flex flex-col">
+                  <div className="flex flex-row items-baseline gap-3">
+                    <p>Too Cold</p>
+                    <div className="rounded-full grow h-2 min-w-35 from-[#9EDAFF] to-[#DD6E5B] bg-linear-to-r" />
+                    <p>Too Hot</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <div className="flex flex-row items-baseline gap-3">
+                    <p>Very Stuffy</p>
+                    <div className="rounded-full grow h-2 min-w-35 from-[#F3BB77] to-[#B3DBB8] bg-linear-to-r" />
+                    <p>Very Fresh</p>
+                  </div>
+                </div>
+              )}
+              <LastUpdated since={lastUpdated} />
             </div>
-          ) : layer === "temperature" ? (
-            <div className="flex flex-col">
-              <div className="flex flex-row items-baseline gap-3">
-                <p>Too Cold</p>
-                <div className="rounded-full grow h-2 min-w-35 from-[#9EDAFF] to-[#DD6E5B] bg-linear-to-r" />
-                <p>Too Hot</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col">
-              <div className="flex flex-row items-baseline gap-3">
-                <p>Very Stuffy</p>
-                <div className="rounded-full grow h-2 min-w-35 from-[#F3BB77] to-[#B3DBB8] bg-linear-to-r" />
-                <p>Very Fresh</p>
-              </div>
-            </div>
-          )}
-          <LastUpdated since={lastUpdated} />
-        </div>
-      </section>
-      <section className="flex grow pb-8">
-        <FloorPlanMap
-          plan={PSE_FLOOR_4}
-          roomColors={roomColors}
-          roomCard={(roomId) => {
-            const row = rows.find((candidate) => candidate.location === roomId);
+          </section>
+          <section className="flex grow pb-8">
+            <FloorPlanMap
+              plan={PSE_FLOOR_4}
+              roomColors={roomColors}
+              roomCard={(roomId) => {
+                const row = rows.find(
+                  (candidate) => candidate.location === roomId,
+                );
 
-            return (
-              <RoomSentimentCard
-                roomId={roomId}
-                layer={layer}
-                counts={row ? layerHistogram(row) : []}
-              />
-            );
-          }}
-        />
-      </section>
+                return (
+                  <RoomSentimentCard
+                    roomId={roomId}
+                    layer={layer}
+                    counts={row ? layerHistogram(row) : []}
+                  />
+                );
+              }}
+            />
+          </section>
+        </div>
+      ) : (
+        <DataTrends room={room} timeRange={timeRange} />
+      )}
     </main>
   );
 }
