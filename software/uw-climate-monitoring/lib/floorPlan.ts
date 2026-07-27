@@ -33,7 +33,7 @@ export interface FloorPlan {
 export const PSE_FLOOR_4: FloorPlan = {
   building: "PSE",
   floor: 4,
-  viewBox: [0, 0, 1350, 672],
+  viewBox: [0, 0, 1315, 672],
   shapes: [
     // classrooms
     {
