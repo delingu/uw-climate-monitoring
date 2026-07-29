@@ -223,7 +223,11 @@ export default function Page() {
         {/* Tablet/desktop: all questions at once */}
         <div className="hidden sm:block">
           {questions.map((question) => (
-            <SentimentSelector key={question.title} {...question} />
+            <SentimentSelector
+              key={question.title}
+              {...question}
+              defaultValue={3}
+            />
           ))}
         </div>
       </section>
