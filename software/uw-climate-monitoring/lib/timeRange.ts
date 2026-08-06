@@ -5,7 +5,7 @@ const DAY = 24 * 60 * 60;
 export type Bucket = "hour" | "day" | "month";
 
 interface RangeConfig {
-  // seconds to look back; null means from the epoch (all time)
+  // seconds to look back; null means from the epoch
   windowSeconds: number | null;
   bucket: Bucket;
 }

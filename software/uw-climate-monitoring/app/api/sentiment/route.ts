@@ -62,9 +62,8 @@ export async function GET(request: NextRequest) {
 
   query += ` GROUP BY s.location`;
 
-  const stmt = db.prepare(query);
-  const result = stmt.all(...params);
-  return NextResponse.json({ result });
+  const result = await db.execute({ sql: query, args: params });
+  return NextResponse.json({ result: result.rows });
 }
 
 export async function POST(request: NextRequest) {
@@ -76,15 +75,14 @@ export async function POST(request: NextRequest) {
   }: SentimentDataPayload = await request.json();
 
   // could add checks for missing location/sentiment data
-  const stmt = db.prepare(`
-   INSERT INTO sentiments (location, temp_sentiment, humidity_sentiment, air_sentiment) 
-   VALUES (?, ?, ?, ?)`);
-
-  const result = stmt.run(
-    location,
-    tempSentiment,
-    humiditySentiment,
-    airSentiment,
+  const result = await db.execute({
+    sql: `
+   INSERT INTO sentiments (location, temp_sentiment, humidity_sentiment, air_sentiment)
+   VALUES (?, ?, ?, ?)`,
+    args: [location, tempSentiment, humiditySentiment, airSentiment],
+  });
+  return NextResponse.json(
+    { id: Number(result.lastInsertRowid) },
+    { status: 201 },
   );
-  return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
 }

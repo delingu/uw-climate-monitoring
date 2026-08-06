@@ -23,26 +23,32 @@ export async function GET(request: NextRequest) {
 
   // consider time storage format:
   // stored as unixepoch in db
-  const stmt = db.prepare(`
-   SELECT * 
-   FROM sensor_data s 
-   WHERE s.timestamp >= ?  
-   AND s.timestamp <= ? 
-   AND s.location = ?`);
-
-  const result = stmt.all(timeStart, timeEnd, location);
-  return NextResponse.json({ result });
+  const result = await db.execute({
+    sql: `
+   SELECT *
+   FROM sensor_data s
+   WHERE s.timestamp >= ?
+   AND s.timestamp <= ?
+   AND s.location = ?`,
+    args: [timeStart, timeEnd, location],
+  });
+  return NextResponse.json({ result: result.rows });
 }
 
 export async function POST(req: NextRequest) {
   const { location, temperature, humidity, carbonDioxide }: SensorDataPayload =
     await req.json();
 
-  const stmt = db.prepare(`
+  const result = await db.execute({
+    sql: `
     INSERT INTO sensor_data (location, temperature, humidity, carbon_dioxide)
     VALUES (?, ?, ?, ?)
-  `);
-  const result = stmt.run(location, temperature, humidity, carbonDioxide);
+  `,
+    args: [location, temperature, humidity, carbonDioxide],
+  });
 
-  return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
+  return NextResponse.json(
+    { id: Number(result.lastInsertRowid) },
+    { status: 201 },
+  );
 }

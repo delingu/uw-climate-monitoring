@@ -8,8 +8,6 @@
 
 // defining desired sensors: aht and ens (co2) sensor
 Adafruit_AHTX0 aht;
-// Address the ENS160 at 0x53 (ADDR pin high) to match what the I2C scanner
-// found; the library's default constructor assumes 0x52.
 ScioSense_ENS160 ens(0x53);
 
 // Since there is another AHT on the ENS the actual AHT needs to connect to other pins
@@ -33,7 +31,6 @@ void setup() {
   Wire1.begin(AHT_SDA, AHT_SCL);
   delay(50);
 
-  // Standalone AHT20 lives on the second bus, so hand aht its Wire1 instance.
   if (!aht.begin(&Wire1)) {
     Serial.println("Could not find AHT20.");
     while (1)
@@ -74,8 +71,6 @@ void loop() {
   // feed temp/humidity into ens to ensure more accurate readings
   ens.set_envdata(temp.temperature, humidity.relative_humidity);
 
-  // Pull a fresh sample into the data registers before reading; geteCO2()
-  // only returns whatever the last measure() fetched.
   ens.measure(true);
   uint16_t eco2 = ens.geteCO2();
 

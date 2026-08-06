@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const stmt = db.prepare(`
+  const result = await db.execute({
+    sql: `
     SELECT
       strftime('${format}', datetime(s.timestamp, 'unixepoch')) AS bucket,
       MIN(s.timestamp) AS ts,
@@ -45,8 +46,8 @@ export async function GET(request: NextRequest) {
     AND s.location = ?
     GROUP BY bucket
     ORDER BY ts
-  `);
-
-  const result = stmt.all(timeStart, timeEnd, location);
-  return NextResponse.json({ result });
+  `,
+    args: [timeStart, timeEnd, location],
+  });
+  return NextResponse.json({ result: result.rows });
 }
